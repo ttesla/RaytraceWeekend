@@ -1,0 +1,15 @@
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Dd]ebug/
+*.pdb
+Raytrace_1/Raytrace_1/x64
+
+# Visual Studio 2015/2017 cache/options directory
+.vs/
+
