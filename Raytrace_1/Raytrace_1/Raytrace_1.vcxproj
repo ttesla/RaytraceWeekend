@@ -140,7 +140,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="src\Color.h" />
+    <ClInclude Include="src\Hittable.h" />
+    <ClInclude Include="src\HittableList.h" />
     <ClInclude Include="src\Ray.h" />
+    <ClInclude Include="src\Sphere.h" />
     <ClInclude Include="src\Vec3.h" />
   </ItemGroup>
   <ItemGroup>
