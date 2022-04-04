@@ -33,6 +33,12 @@
     <ClInclude Include="src\HittableList.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\Definitions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Camera.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Main.cpp">
