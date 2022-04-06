@@ -1,2 +1,2 @@
 # RaytraceWeekend
-Workspace for "Ray Tracing in One Weekend Book Series" with Visual Studio 2019 
+Workspace for "Ray Tracing in One Weekend Book Series" in Visual Studio 2019 
