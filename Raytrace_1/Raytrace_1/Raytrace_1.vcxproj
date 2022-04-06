@@ -142,6 +142,7 @@
     <ClInclude Include="src\Camera.h" />
     <ClInclude Include="src\Color.h" />
     <ClInclude Include="src\Definitions.h" />
+    <ClInclude Include="src\Dielectric.h" />
     <ClInclude Include="src\Hittable.h" />
     <ClInclude Include="src\HittableList.h" />
     <ClInclude Include="src\Lambertian.h" />
