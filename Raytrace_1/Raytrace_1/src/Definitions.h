@@ -9,8 +9,8 @@
 
 // Usings
 
-using std::shared_ptr;
-using std::make_shared;
+using std::unique_ptr;
+using std::make_unique;
 using std::sqrt;
 
 // Constants

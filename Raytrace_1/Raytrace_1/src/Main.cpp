@@ -1,3 +1,5 @@
+#include "raylib.h"
+
 #include "Definitions.h"
 #include "Ray.h"
 #include "HittableList.h"
@@ -11,6 +13,7 @@
 #include <iostream>
 #include <fstream>
 #include <chrono>
+#include <vector>
 
 using std::endl;
 using std::cout;
@@ -65,8 +68,8 @@ hittable_list random_scene()
 {
     hittable_list world;
 
-    auto ground_material = make_shared<lambertian>(color(0.5, 0.5, 0.5));
-    world.add(make_shared<sphere>(point3(0, -1000, 0), 1000, ground_material));
+    auto ground_material = make_unique<lambertian>(color(0.5, 0.5, 0.5));
+    world.add(make_unique<sphere>(point3(0, -1000, 0), 1000, std::move(ground_material)));
 
     int balls = 11;
 
@@ -79,79 +82,82 @@ hittable_list random_scene()
 
             if ((center - point3(4, 0.2, 0)).length() > 0.9)
             {
-                shared_ptr<material> sphere_material;
-
-                if (choose_mat < 0.8) 
+                if (choose_mat < 0.8)
                 {
                     // diffuse
                     auto albedo = color::random() * color::random();
-                    sphere_material = make_shared<lambertian>(albedo);
-                    world.add(make_shared<sphere>(center, 0.2, sphere_material));
+                    world.add(make_unique<sphere>(center, 0.2, make_unique<lambertian>(albedo)));
                 }
-                else if (choose_mat < 0.95) 
+                else if (choose_mat < 0.95)
                 {
                     // metal
                     auto albedo = color::random(0.5, 1);
                     auto fuzz = random_double(0, 0.5);
-                    sphere_material = make_shared<metal>(albedo, fuzz);
-                    world.add(make_shared<sphere>(center, 0.2, sphere_material));
+                    world.add(make_unique<sphere>(center, 0.2, make_unique<metal>(albedo, fuzz)));
                 }
-                else 
+                else
                 {
                     // glass
-                    sphere_material = make_shared<dielectric>(1.5);
-                    world.add(make_shared<sphere>(center, 0.2, sphere_material));
+                    world.add(make_unique<sphere>(center, 0.2, make_unique<dielectric>(1.5)));
                 }
             }
         }
     }
 
-    auto material1 = make_shared<dielectric>(1.5);
-    world.add(make_shared<sphere>(point3(0, 1, 0), 1.0, material1));
-
-    auto material2 = make_shared<lambertian>(color(0.4, 0.2, 0.1));
-    world.add(make_shared<sphere>(point3(-4, 1, 0), 1.0, material2));
-
-    auto material3 = make_shared<metal>(color(0.8, 0.8, 0.8), 0.0);
-    world.add(make_shared<sphere>(point3(4, 1, 0), 1.0, material3));
+    world.add(make_unique<sphere>(point3(0, 1, 0), 1.0, make_unique<dielectric>(1.5)));
+    world.add(make_unique<sphere>(point3(-4, 1, 0), 1.0, make_unique<lambertian>(color(0.4, 0.2, 0.1))));
+    world.add(make_unique<sphere>(point3(4, 1, 0), 1.0, make_unique<metal>(color(0.8, 0.8, 0.8), 0.0)));
 
     return world;
+}
+
+// Convert an accumulated sample color into a displayable / PPM 8-bit color.
+// Same math as the original write_color(): average samples, gamma-correct (gamma=2.0), clamp.
+Color to_display_color(const color& pixel_color, int samples_per_pixel)
+{
+    auto r = pixel_color.x();
+    auto g = pixel_color.y();
+    auto b = pixel_color.z();
+
+    auto scale = 1.0 / samples_per_pixel;
+    r = sqrt(scale * r);
+    g = sqrt(scale * g);
+    b = sqrt(scale * b);
+
+    return Color{
+        static_cast<unsigned char>(256 * clamp(r, 0.0, 0.999)),
+        static_cast<unsigned char>(256 * clamp(g, 0.0, 0.999)),
+        static_cast<unsigned char>(256 * clamp(b, 0.0, 0.999)),
+        255
+    };
+}
+
+// Write the finished image to a PPM file (top scanline first, matching the original output).
+void write_ppm(const char* path, const std::vector<Color>& fb, int width, int height)
+{
+    ofstream out(path);
+    out << "P3\n" << width << ' ' << height << "\n255\n";
+    for (int y = 0; y < height; ++y)
+        for (int x = 0; x < width; ++x)
+        {
+            const Color& c = fb[y * width + x];
+            out << static_cast<int>(c.r) << ' '
+                << static_cast<int>(c.g) << ' '
+                << static_cast<int>(c.b) << '\n';
+        }
 }
 
 void Render()
 {
     // Image
     const auto aspect_ratio = 16.0 / 9.0;
-    const int image_width = 1280;
+    const int image_width = 320;
     const int image_height = static_cast<int>(image_width / aspect_ratio);
-    const int samples_per_pixel = 500;
-    const int max_depth = 50;
+    const int samples_per_pixel = 1;
+    const int max_depth = 1;
 
     // World
     auto world = random_scene();
-    /*world.add(make_shared<sphere>(point3(0, 0, -1), 0.5, nullptr));
-    world.add(make_shared<sphere>(point3(0, -100.5, -1), 100, nullptr));*/
-
-    /*auto material_ground = make_shared<lambertian>(color(0.3, 0.3, 0.3));
-    auto material_center = make_shared<lambertian>(color(0.7, 0.3, 0.3));
-    auto material_blue   = make_shared<lambertian>(color(0.1, 0.1, 0.8));
-    auto material_green   = make_shared<lambertian>(color(0.1, 0.8, 0.1));
-    auto material_metal_1   = make_shared<metal>(color(0.8, 0.8, 0.8), 0.2);
-    auto material_metal_2   = make_shared<metal>(color(0.9, 0.1, 0.1), 0.1);
-    auto material_right  = make_shared<metal>(color(0.8, 0.6, 0.2), 0.9);
-    auto material_glass_1  = make_shared<dielectric>(1.5);
-    auto material_glass_2  = make_shared<dielectric>(2.5);
-
-    world.add(make_shared<sphere>(point3(0.0, -100.5, -1.0), 100.0, material_ground));
-    
-    world.add(make_shared<sphere>(point3(0.0, 0.0, -1.0), 0.5, material_center));
-    world.add(make_shared<sphere>(point3(-1.0, 0.0, -1.0), 0.5, material_metal_1));
-    world.add(make_shared<sphere>(point3(1.0, 0.0, -1.0), 0.5, material_glass_1));
-    world.add(make_shared<sphere>(point3(0.5, -0.25, 0.0), 0.25, material_glass_2));
-    world.add(make_shared<sphere>(point3(0.5, 1.0, -1.0), 0.5, material_blue));
-    world.add(make_shared<sphere>(point3(-1.0, 0.0, -2.0), 0.5, material_green));
-    world.add(make_shared<sphere>(point3(-2.0, 0.0, -1.0), 0.5, material_glass_2));*/
-
 
     // Camera
     point3 lookfrom(13, 2, 3);
@@ -162,44 +168,86 @@ void Render()
     auto vFov = 20;
     camera cam(lookfrom, lookat, vup, vFov, aspect_ratio, aperture, dist_to_focus);
 
-    // Write PPM File
-    ofstream outputFile;
-    outputFile.open("render.ppm");
+    // Realtime preview window (scaled up so the small render is comfortably visible)
+    const int scale = 4;
+    InitWindow(image_width * scale, image_height * scale, "RaytraceWeekend - realtime (raylib)");
+    SetTargetFPS(60);
 
-    outputFile << "P3\n" << image_width << ' ' << image_height << "\n255\n";
+    // Persistent off-screen buffer we "put pixels" into as each scanline finishes.
+    RenderTexture2D target = LoadRenderTexture(image_width, image_height);
+    BeginTextureMode(target);
+        ClearBackground(BLACK);
+    EndTextureMode();
 
-    for (int j = image_height - 1; j >= 0; --j) 
+    // CPU-side copy of the image (screen order, row 0 = top) used to write the PPM at the end.
+    std::vector<Color> framebuffer(image_width * image_height, Color{ 0, 0, 0, 255 });
+
+    int rows_done = 0;          // completed scanlines (0 = top of image)
+    bool saved = false;
+    auto start = std::chrono::high_resolution_clock::now();
+
+    while (!WindowShouldClose())
     {
-        cout << "\rScanlines remaining: " << j << ' ' << std::flush;
-        for (int i = 0; i < image_width; ++i) 
+        // --- Trace one full scanline per frame so the window stays responsive ---
+        if (rows_done < image_height)
         {
-            color pixel_color(0, 0, 0);
+            const int j = (image_height - 1) - rows_done;   // raytracer row (bottom = 0)
+            const int screen_y = rows_done;                 // screen / PPM row (top = 0)
 
-            // Sampling
-            for (int s = 0; s < samples_per_pixel; ++s) 
+            BeginTextureMode(target);
+            for (int i = 0; i < image_width; ++i)
             {
-                auto u = (i + random_double()) / (image_width - 1.0);
-                auto v = (j + random_double()) / (image_height - 1.0);
-                ray r = cam.get_ray(u, v);
-                pixel_color += ray_color(r, world, max_depth);
+                color pixel_color(0, 0, 0);
+
+                // Sampling
+                for (int s = 0; s < samples_per_pixel; ++s)
+                {
+                    auto u = (i + random_double()) / (image_width - 1.0);
+                    auto v = (j + random_double()) / (image_height - 1.0);
+                    ray r = cam.get_ray(u, v);
+                    pixel_color += ray_color(r, world, max_depth);
+                }
+
+                Color c = to_display_color(pixel_color, samples_per_pixel);
+                framebuffer[screen_y * image_width + i] = c;
+                DrawPixel(i, screen_y, c);          // put pixel into the preview buffer
             }
-            
-            write_color(outputFile, pixel_color, samples_per_pixel);
+            EndTextureMode();
+
+            ++rows_done;
+
+            if (rows_done == image_height && !saved)
+            {
+                auto end = std::chrono::high_resolution_clock::now();
+                auto secs = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+                write_ppm("render.ppm", framebuffer, image_width, image_height);
+                cout << "Rendered in " << secs << " seconds. Saved render.ppm" << endl;
+                saved = true;
+            }
         }
+
+        // --- Present the buffer, scaled up (negative source height flips the RenderTexture upright) ---
+        BeginDrawing();
+            ClearBackground(BLACK);
+            DrawTexturePro(
+                target.texture,
+                Rectangle{ 0, 0, (float)target.texture.width, -(float)target.texture.height },
+                Rectangle{ 0, 0, (float)(image_width * scale), (float)(image_height * scale) },
+                Vector2{ 0, 0 }, 0.0f, WHITE);
+
+            if (!saved)
+                DrawText(TextFormat("Tracing scanline %d / %d", rows_done, image_height), 10, 10, 20, RAYWHITE);
+            else
+                DrawText("Done - saved render.ppm", 10, 10, 20, GREEN);
+        EndDrawing();
     }
 
-    outputFile.close();
-    cout << "\nDone.\n";
+    UnloadRenderTexture(target);
+    CloseWindow();
 }
 
 int main()
 {
-    auto start = std::chrono::high_resolution_clock::now();
     Render();
-    auto end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start);
-
-    cout << "Renderen in: " << duration.count() << " seconds" << endl;
-
     return 0;
 }

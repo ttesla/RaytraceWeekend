@@ -5,12 +5,18 @@
 *.userosscache
 *.sln.docstates
 
-# Build results
+# Build output (any project/solution, any platform/config)
 [Dd]ebug/
+[Rr]elease/
+[Xx]64/
+[Ww]in32/
+[Xx]86/
+build/
 *.pdb
 *.ppm
-Raytrace_1/Raytrace_1/x64
 
-# Visual Studio 2015/2017 cache/options directory
+# External dependency (full raylib checkout)
+/raylib
+
+# Visual Studio cache/options directory
 .vs/
-
