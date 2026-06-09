@@ -20,3 +20,6 @@ build/
 
 # Visual Studio cache/options directory
 .vs/
+
+# Ai agents
+.claude/

@@ -151,10 +151,11 @@ void Render()
 {
     // Image
     const auto aspect_ratio = 16.0 / 9.0;
-    const int image_width = 320;
+    const int image_width = 640;
     const int image_height = static_cast<int>(image_width / aspect_ratio);
-    const int samples_per_pixel = 1;
-    const int max_depth = 1;
+    const int samples_per_pixel = 20;
+    const int max_depth = 20;
+    const int draw_scale = 2;
 
     // World
     auto world = random_scene();
@@ -169,8 +170,7 @@ void Render()
     camera cam(lookfrom, lookat, vup, vFov, aspect_ratio, aperture, dist_to_focus);
 
     // Realtime preview window (scaled up so the small render is comfortably visible)
-    const int scale = 4;
-    InitWindow(image_width * scale, image_height * scale, "RaytraceWeekend - realtime (raylib)");
+    InitWindow(image_width * draw_scale, image_height * draw_scale, "RaytraceWeekend - realtime (raylib)");
     SetTargetFPS(60);
 
     // Persistent off-screen buffer we "put pixels" into as each scanline finishes.
@@ -232,7 +232,7 @@ void Render()
             DrawTexturePro(
                 target.texture,
                 Rectangle{ 0, 0, (float)target.texture.width, -(float)target.texture.height },
-                Rectangle{ 0, 0, (float)(image_width * scale), (float)(image_height * scale) },
+                Rectangle{ 0, 0, (float)(image_width * draw_scale), (float)(image_height * draw_scale) },
                 Vector2{ 0, 0 }, 0.0f, WHITE);
 
             if (!saved)
